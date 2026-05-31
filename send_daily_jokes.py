@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from joke_filters import FilterConfig
 from joke_store import DEFAULT_CSV_PATH, DEFAULT_DB_PATH, JokeStore
 
 
@@ -52,6 +53,9 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=None, help="Optional random seed for reproducible tests")
     parser.add_argument("--no-links", action="store_true", help="Do not include joke source links")
     parser.add_argument("--intro", default=None, help="Optional intro line to add under the phase title")
+    parser.add_argument("--max-chars", type=int, default=800, help="Prefer jokes up to this many characters")
+    parser.add_argument("--min-score", type=int, default=50, help="Prefer jokes at or above this score")
+    parser.add_argument("--allow-banned-terms", action="store_true", help="Disable banned-term filtering")
     args = parser.parse_args()
 
     store = JokeStore(db_path=args.db)
@@ -62,6 +66,11 @@ def main() -> None:
         count=args.count,
         recent_limit=args.recent_limit,
         seed=args.seed,
+        filter_config=FilterConfig(
+            max_chars=args.max_chars,
+            min_score=args.min_score,
+            exclude_banned_terms=not args.allow_banned_terms,
+        ),
     )
     print(build_message(phase=args.phase, jokes=jokes, include_links=not args.no_links, intro=args.intro))
 

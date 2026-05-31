@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+from joke_filters import FilterConfig, is_clean_enough
+
 
 DEFAULT_CSV_PATH = Path(__file__).resolve().parent / "daily-jokes-1000.csv"
 DEFAULT_DB_PATH = Path(__file__).resolve().parent / "data" / "jokes.db"
@@ -89,7 +91,13 @@ class JokeStore:
             row = conn.execute("SELECT COUNT(*) AS total FROM jokes").fetchone()
             return int(row["total"])
 
-    def get_random_unique_jokes(self, count: int = 3, recent_limit: int | None = None, seed: int | None = None) -> list[Joke]:
+    def get_random_unique_jokes(
+        self,
+        count: int = 3,
+        recent_limit: int | None = None,
+        seed: int | None = None,
+        filter_config: FilterConfig | None = None,
+    ) -> list[Joke]:
         if count <= 0:
             return []
 
@@ -104,6 +112,7 @@ class JokeStore:
         recent_ids = recent_ids[-recent_limit:] if recent_limit > 0 else []
 
         rng = random.Random(seed)
+        filter_config = filter_config or FilterConfig()
         with closing(self.connect()) as conn:
             placeholders = ",".join("?" for _ in recent_ids)
             if recent_ids:
@@ -123,7 +132,18 @@ class JokeStore:
                 ).fetchall()
                 recent_ids = []
 
-        selected_rows = rng.sample(rows, k=min(count, len(rows)))
+        filtered_rows = [
+            row for row in rows
+            if is_clean_enough(
+                title=row["title"],
+                body=row["body"],
+                score=int(row["score"]),
+                config=filter_config,
+            )
+        ]
+        candidate_rows = filtered_rows if len(filtered_rows) >= count else rows
+
+        selected_rows = rng.sample(candidate_rows, k=min(count, len(candidate_rows)))
         jokes = [self._row_to_joke(row) for row in selected_rows]
         self._save_state(recent_ids + [j.joke_id for j in jokes], recent_limit=max(recent_limit, count))
         return jokes

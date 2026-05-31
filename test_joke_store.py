@@ -2,6 +2,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from joke_filters import FilterConfig, is_clean_enough
 from joke_store import JokeStore
 from send_daily_jokes import build_message
 
@@ -46,6 +47,13 @@ class JokeStoreTests(unittest.TestCase):
             self.assertIn("给你今天的测试笑话", message)
             self.assertIn("1. ", message)
             self.assertIn("2. ", message)
+
+    def test_filter_blocks_banned_and_long_content(self) -> None:
+        config = FilterConfig(max_chars=20, min_score=100)
+        self.assertFalse(is_clean_enough(title="ok", body="this is way too long for the tiny limit", score=200, config=config))
+        self.assertFalse(is_clean_enough(title="ok", body="contains rape term", score=200, config=FilterConfig()))
+        self.assertFalse(is_clean_enough(title="ok", body="short", score=1, config=FilterConfig(min_score=10)))
+        self.assertTrue(is_clean_enough(title="short title", body="clean body", score=200, config=FilterConfig(max_chars=1000, min_score=10)))
 
 
 if __name__ == "__main__":

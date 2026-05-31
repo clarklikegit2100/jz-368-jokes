@@ -42,6 +42,7 @@ python3 send_daily_jokes.py --phase morning --count 1
 python3 send_daily_jokes.py --phase afternoon --count 1
 python3 send_daily_jokes.py --phase evening --count 1
 python3 send_daily_jokes.py --phase morning --count 1 --no-links --intro "给你今天的一条笑话"
+python3 send_daily_jokes.py --phase morning --count 1 --max-chars 300 --min-score 200 --no-links
 ```
 
 If you want one job to send multiple jokes at once:
@@ -62,6 +63,15 @@ python3 -m unittest test_joke_store.py
 - A small state file at `data/selection_state.json` remembers recent joke IDs.
 - Sampling avoids recent joke IDs first, then falls back to the full pool only if needed.
 - Within a single run, selected jokes are always unique.
+
+## Quality filtering
+
+`send_daily_jokes.py` now supports soft quality filtering before sampling.
+
+- `--max-chars` prefers shorter jokes for chat delivery
+- `--min-score` prefers higher-scoring jokes
+- banned-term filtering is on by default for safer Telegram output
+- if filtering becomes too strict and leaves too few jokes, the sampler safely falls back to the broader pool
 
 ## Integration idea
 

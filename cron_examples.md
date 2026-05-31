@@ -16,6 +16,12 @@ Morning without links and with a custom intro:
 python3 send_daily_jokes.py --phase morning --count 1 --no-links --intro "给你今天的一条笑话"
 ```
 
+Stricter Telegram-friendly filtering:
+
+```bash
+python3 send_daily_jokes.py --phase morning --count 1 --max-chars 300 --min-score 200 --no-links
+```
+
 Afternoon:
 
 ```bash

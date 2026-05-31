@@ -11,6 +11,8 @@ Daily joke reference data and lightweight local tooling for automation that send
 - `sample_jokes.py` prints one or more unique random jokes from the database.
 - `send_daily_jokes.py` builds a delivery-ready message for morning / afternoon / evening cron jobs.
 - `test_joke_store.py` runs a small sanity test suite.
+- `run_daily_joke.sh` is a tiny shell wrapper for scheduled usage.
+- `cron_examples.md` shows shell and OpenClaw integration patterns.
 
 ## Current Joke Pool
 
@@ -77,3 +79,14 @@ Or if your automation wants three jokes in one message:
 ```bash
 python3 send_daily_jokes.py --phase daily --count 3
 ```
+
+There is also a shell wrapper:
+
+```bash
+./run_daily_joke.sh morning 1
+./run_daily_joke.sh afternoon 1
+./run_daily_joke.sh evening 1
+./run_daily_joke.sh daily 3
+```
+
+For more examples, see `cron_examples.md`.

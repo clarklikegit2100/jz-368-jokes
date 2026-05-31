@@ -41,8 +41,9 @@ class JokeStoreTests(unittest.TestCase):
             )
             store.migrate_from_csv(csv_path)
             jokes = store.get_random_unique_jokes(count=2, recent_limit=20, seed=123)
-            message = build_message(phase="morning", jokes=jokes, include_links=False)
+            message = build_message(phase="morning", jokes=jokes, include_links=False, intro="给你今天的测试笑话")
             self.assertIn("早晨笑话", message)
+            self.assertIn("给你今天的测试笑话", message)
             self.assertIn("1. ", message)
             self.assertIn("2. ", message)
 

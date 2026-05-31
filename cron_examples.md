@@ -10,6 +10,12 @@ Morning:
 ./run_daily_joke.sh morning 1
 ```
 
+Morning without links and with a custom intro:
+
+```bash
+python3 send_daily_jokes.py --phase morning --count 1 --no-links --intro "给你今天的一条笑话"
+```
+
 Afternoon:
 
 ```bash

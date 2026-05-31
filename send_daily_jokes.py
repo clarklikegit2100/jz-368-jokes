@@ -15,9 +15,12 @@ PHASE_LABELS = {
 }
 
 
-def build_message(*, phase: str, jokes: list, include_links: bool = True) -> str:
+def build_message(*, phase: str, jokes: list, include_links: bool = True, intro: str | None = None) -> str:
     title = PHASE_LABELS.get(phase, PHASE_LABELS["daily"])
     lines = [f"{title} 🃏", ""]
+    if intro:
+        lines.append(intro.strip())
+        lines.append("")
 
     for index, joke in enumerate(jokes, start=1):
         lines.append(f"{index}. {joke.title.strip()}")
@@ -48,6 +51,7 @@ def main() -> None:
     parser.add_argument("--recent-limit", type=int, default=None, help="How many recent jokes to avoid repeating")
     parser.add_argument("--seed", type=int, default=None, help="Optional random seed for reproducible tests")
     parser.add_argument("--no-links", action="store_true", help="Do not include joke source links")
+    parser.add_argument("--intro", default=None, help="Optional intro line to add under the phase title")
     args = parser.parse_args()
 
     store = JokeStore(db_path=args.db)
@@ -59,7 +63,7 @@ def main() -> None:
         recent_limit=args.recent_limit,
         seed=args.seed,
     )
-    print(build_message(phase=args.phase, jokes=jokes, include_links=not args.no_links))
+    print(build_message(phase=args.phase, jokes=jokes, include_links=not args.no_links, intro=args.intro))
 
 
 if __name__ == "__main__":

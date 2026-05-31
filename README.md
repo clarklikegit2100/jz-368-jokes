@@ -41,6 +41,7 @@ python3 sample_jokes.py --count 3
 python3 send_daily_jokes.py --phase morning --count 1
 python3 send_daily_jokes.py --phase afternoon --count 1
 python3 send_daily_jokes.py --phase evening --count 1
+python3 send_daily_jokes.py --phase morning --count 1 --no-links --intro "给你今天的一条笑话"
 ```
 
 If you want one job to send multiple jokes at once:

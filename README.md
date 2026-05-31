@@ -9,6 +9,7 @@ Daily joke reference data and lightweight local tooling for automation that send
 - `joke_store.py` provides a SQLite-backed joke store and recent-repeat protection.
 - `migrate_jokes.py` imports the CSV into a local SQLite database.
 - `sample_jokes.py` prints one or more unique random jokes from the database.
+- `send_daily_jokes.py` builds a delivery-ready message for morning / afternoon / evening cron jobs.
 - `test_joke_store.py` runs a small sanity test suite.
 
 ## Current Joke Pool
@@ -32,7 +33,21 @@ By default this creates `data/jokes.db`.
 python3 sample_jokes.py --count 3
 ```
 
-### 3. Run the sanity test
+### 3. Build a delivery-ready cron message
+
+```bash
+python3 send_daily_jokes.py --phase morning --count 1
+python3 send_daily_jokes.py --phase afternoon --count 1
+python3 send_daily_jokes.py --phase evening --count 1
+```
+
+If you want one job to send multiple jokes at once:
+
+```bash
+python3 send_daily_jokes.py --phase daily --count 3
+```
+
+### 4. Run the sanity test
 
 ```bash
 python3 -m unittest test_joke_store.py
@@ -47,4 +62,18 @@ python3 -m unittest test_joke_store.py
 
 ## Integration idea
 
-For cron jobs or bot delivery, call `sample_jokes.py` from the scheduled task and pass the output to your messaging layer.
+For cron jobs or bot delivery, call `send_daily_jokes.py` from the scheduled task and pass the output to your messaging layer.
+
+Examples:
+
+```bash
+python3 send_daily_jokes.py --phase morning --count 1
+python3 send_daily_jokes.py --phase afternoon --count 1
+python3 send_daily_jokes.py --phase evening --count 1
+```
+
+Or if your automation wants three jokes in one message:
+
+```bash
+python3 send_daily_jokes.py --phase daily --count 3
+```

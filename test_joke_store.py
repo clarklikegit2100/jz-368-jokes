@@ -3,6 +3,7 @@ import tempfile
 import unittest
 
 from joke_store import JokeStore
+from send_daily_jokes import build_message
 
 
 class JokeStoreTests(unittest.TestCase):
@@ -27,6 +28,23 @@ class JokeStoreTests(unittest.TestCase):
             next_jokes = store.get_random_unique_jokes(count=3, recent_limit=30, seed=456)
             self.assertEqual(len(next_jokes), 3)
             self.assertTrue({j.joke_id for j in jokes}.isdisjoint({j.joke_id for j in next_jokes}))
+
+    def test_build_message_formats_output(self) -> None:
+        repo_dir = Path(__file__).resolve().parent
+        csv_path = repo_dir / "daily-jokes-1000.csv"
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            store = JokeStore(
+                db_path=temp_path / "jokes.db",
+                state_path=temp_path / "selection_state.json",
+            )
+            store.migrate_from_csv(csv_path)
+            jokes = store.get_random_unique_jokes(count=2, recent_limit=20, seed=123)
+            message = build_message(phase="morning", jokes=jokes, include_links=False)
+            self.assertIn("早晨笑话", message)
+            self.assertIn("1. ", message)
+            self.assertIn("2. ", message)
 
 
 if __name__ == "__main__":

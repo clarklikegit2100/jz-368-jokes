@@ -4,9 +4,10 @@ import csv
 import json
 import random
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Sequence
 
 
 DEFAULT_CSV_PATH = Path(__file__).resolve().parent / "daily-jokes-1000.csv"
@@ -47,7 +48,7 @@ class JokeStore:
 
     def migrate_from_csv(self, csv_path: Path | str = DEFAULT_CSV_PATH) -> int:
         csv_path = Path(csv_path)
-        with self.connect() as conn:
+        with closing(self.connect()) as conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS jokes (
@@ -84,7 +85,7 @@ class JokeStore:
         return len(rows)
 
     def count(self) -> int:
-        with self.connect() as conn:
+        with closing(self.connect()) as conn:
             row = conn.execute("SELECT COUNT(*) AS total FROM jokes").fetchone()
             return int(row["total"])
 
@@ -103,7 +104,7 @@ class JokeStore:
         recent_ids = recent_ids[-recent_limit:] if recent_limit > 0 else []
 
         rng = random.Random(seed)
-        with self.connect() as conn:
+        with closing(self.connect()) as conn:
             placeholders = ",".join("?" for _ in recent_ids)
             if recent_ids:
                 rows = conn.execute(

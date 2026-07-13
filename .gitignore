@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 one-million-reddit-jokes.csv
 data/
+.env

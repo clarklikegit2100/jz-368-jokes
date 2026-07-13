@@ -97,6 +97,7 @@ class JokeStore:
         recent_limit: int | None = None,
         seed: int | None = None,
         filter_config: FilterConfig | None = None,
+        record_selection: bool = True,
     ) -> list[Joke]:
         if count <= 0:
             return []
@@ -145,8 +146,21 @@ class JokeStore:
 
         selected_rows = rng.sample(candidate_rows, k=min(count, len(candidate_rows)))
         jokes = [self._row_to_joke(row) for row in selected_rows]
-        self._save_state(recent_ids + [j.joke_id for j in jokes], recent_limit=max(recent_limit, count))
+        if record_selection:
+            self._save_state(recent_ids + [j.joke_id for j in jokes], recent_limit=max(recent_limit, count))
         return jokes
+
+    def remember_jokes(self, jokes: Sequence[Joke], recent_limit: int | None = None) -> None:
+        """Record jokes after a delivery succeeds."""
+        if not jokes:
+            return
+
+        total = self.count()
+        if recent_limit is None:
+            recent_limit = min(max(len(jokes) * 10, 30), max(total - len(jokes), 0))
+        recent_limit = max(recent_limit, len(jokes))
+        recent_ids = self._load_state().get("recent_joke_ids", [])
+        self._save_state(recent_ids + [joke.joke_id for joke in jokes], recent_limit=recent_limit)
 
     def _row_to_joke(self, row: sqlite3.Row) -> Joke:
         return Joke(

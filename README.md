@@ -101,3 +101,47 @@ There is also a shell wrapper:
 ```
 
 For more examples, see `cron_examples.md`.
+
+## Telegram delivery
+
+The repository can send one non-repeating joke in each time slot through the
+official Telegram Bot API.
+
+### Required secrets
+
+Create a bot with `@BotFather`, send the bot `/start`, and obtain the target
+chat ID from the Bot API `getUpdates` response. Keep both values out of Git.
+
+For local use, set these environment variables:
+
+```powershell
+$env:TELEGRAM_BOT_TOKEN="your-bot-token"
+$env:TELEGRAM_CHAT_ID="your-chat-id"
+```
+
+For GitHub Actions, add repository secrets named `TELEGRAM_BOT_TOKEN` and
+`TELEGRAM_CHAT_ID` under **Settings → Secrets and variables → Actions**.
+
+### Preview and send
+
+A preview does not send a message or consume a joke from recent history:
+
+```bash
+python send_telegram_joke.py --phase morning --dry-run
+```
+
+Send one joke:
+
+```bash
+python send_telegram_joke.py --phase morning
+python send_telegram_joke.py --phase afternoon
+python send_telegram_joke.py --phase evening
+```
+
+The workflow in `.github/workflows/telegram-daily-jokes.yml` sends at 08:00,
+12:30, and 20:00 in the `America/New_York` timezone. Change all three
+`timezone` values if another IANA timezone is required, such as
+`Asia/Shanghai`. The workflow can also be run manually from the Actions tab.
+
+Recent-joke history is saved only after Telegram confirms delivery. The
+scheduled workflow restores and saves this state through the GitHub Actions

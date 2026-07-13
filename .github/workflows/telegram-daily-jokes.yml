@@ -67,7 +67,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python send_telegram_joke.py --phase "$JOKE_PHASE"
+        run: python send_telegram_joke.py --phase "$JOKE_PHASE" --csv daily-jokes-zh-500.csv --db data/jokes-zh.db
 
       - name: Save recent-joke history
         if: success()

@@ -145,3 +145,11 @@ The workflow in `.github/workflows/telegram-daily-jokes.yml` sends at 08:00,
 
 Recent-joke history is saved only after Telegram confirms delivery. The
 scheduled workflow restores and saves this state through the GitHub Actions
+
+## Chinese joke pool
+
+- `daily-jokes-zh-500.csv` contains exactly 500 family-friendly Chinese jokes.
+- The pool combines 50 standalone cold jokes with 450 light scenario jokes.
+- The Telegram workflow uses this Chinese pool by default.
+- English jokes remain available in `daily-jokes-1000.csv`.
+- Chinese and English databases use separate SQLite files.

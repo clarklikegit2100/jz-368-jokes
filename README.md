@@ -60,9 +60,10 @@ python3 -m unittest test_joke_store.py
 ## How uniqueness works
 
 - Jokes are stored in SQLite for faster repeated access than reparsing the CSV every time.
-- A small state file at `data/selection_state.json` remembers recent joke IDs.
-- Sampling avoids recent joke IDs first, then falls back to the full pool only if needed.
-- Within a single run, selected jokes are always unique.
+- Telegram delivery shuffles every eligible joke ID into a deck at the start of each cycle.
+- Each successful delivery removes only the top joke, so all 500 appear once before reshuffling.
+- Failed deliveries and dry runs do not consume a joke from the deck.
+- A new cycle is reshuffled and cannot start with the previous cycle's final joke.
 
 ## Quality filtering
 
@@ -143,8 +144,9 @@ The workflow in `.github/workflows/telegram-daily-jokes.yml` sends at 08:00,
 `timezone` values if another IANA timezone is required, such as
 `Asia/Shanghai`. The workflow can also be run manually from the Actions tab.
 
-Recent-joke history is saved only after Telegram confirms delivery. The
-scheduled workflow restores and saves this state through the GitHub Actions
+The shuffled-deck state is restored and saved through the GitHub Actions cache.
+A joke is removed from the deck only after Telegram confirms delivery. If the
+cache is deleted or expires, the workflow starts a fresh shuffled cycle.
 
 ## Chinese joke pool
 

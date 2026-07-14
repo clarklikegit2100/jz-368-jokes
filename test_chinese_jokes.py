@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import re
 import tempfile
 import unittest
@@ -36,6 +37,53 @@ class ChineseJokePoolTests(unittest.TestCase):
 
         self.assertEqual(len(jokes), 3)
         self.assertTrue(all(joke.source_id.startswith("zh-") for joke in jokes))
+
+    def test_shuffled_deck_is_random_and_has_no_repeats_in_a_cycle(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            state_path = temp / "selection_state.json"
+            store = JokeStore(db_path=temp / "jokes-zh.db", state_path=state_path)
+            store.migrate_from_csv(self.csv_path)
+
+            drawn_ids = []
+            for _ in range(500):
+                jokes = store.get_from_shuffled_deck(count=1, seed=123)
+                drawn_ids.append(jokes[0].joke_id)
+                store.remember_jokes(jokes, recent_limit=500)
+
+            self.assertEqual(len(drawn_ids), 500)
+            self.assertEqual(len(set(drawn_ids)), 500)
+            self.assertNotEqual(drawn_ids, list(range(1, 501)))
+
+            next_joke = store.get_from_shuffled_deck(count=1, seed=456)
+            self.assertNotEqual(next_joke[0].joke_id, drawn_ids[-1])
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertEqual(state["deck_cycle"], 2)
+
+    def test_shuffled_deck_does_not_consume_before_success(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            state_path = temp / "selection_state.json"
+            store = JokeStore(db_path=temp / "jokes-zh.db", state_path=state_path)
+            store.migrate_from_csv(self.csv_path)
+
+            first = store.get_from_shuffled_deck(count=1, seed=123)
+            retry = store.get_from_shuffled_deck(count=1, seed=999)
+            self.assertEqual(first[0].joke_id, retry[0].joke_id)
+
+            store.remember_jokes(first, recent_limit=500)
+            second = store.get_from_shuffled_deck(count=1)
+            self.assertNotEqual(first[0].joke_id, second[0].joke_id)
+
+    def test_shuffled_deck_preview_does_not_create_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            state_path = temp / "selection_state.json"
+            store = JokeStore(db_path=temp / "jokes-zh.db", state_path=state_path)
+            store.migrate_from_csv(self.csv_path)
+
+            store.get_from_shuffled_deck(count=1, seed=123, persist_deck=False)
+            self.assertFalse(state_path.exists())
 
 
 if __name__ == "__main__":

@@ -35,16 +35,15 @@ def main() -> None:
     if not args.db.exists():
         store.migrate_from_csv(csv_path=args.csv)
 
-    jokes = store.get_random_unique_jokes(
+    jokes = store.get_from_shuffled_deck(
         count=1,
-        recent_limit=args.recent_limit,
         seed=args.seed,
         filter_config=FilterConfig(
             max_chars=args.max_chars,
             min_score=args.min_score,
             exclude_banned_terms=not args.allow_banned_terms,
         ),
-        record_selection=False,
+        persist_deck=not args.dry_run,
     )
     message = build_message(
         phase=args.phase,

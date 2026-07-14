@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import random
 import sqlite3
@@ -150,6 +151,63 @@ class JokeStore:
             self._save_state(recent_ids + [j.joke_id for j in jokes], recent_limit=max(recent_limit, count))
         return jokes
 
+    def get_from_shuffled_deck(
+        self,
+        count: int = 1,
+        seed: int | None = None,
+        filter_config: FilterConfig | None = None,
+        persist_deck: bool = True,
+    ) -> list[Joke]:
+        """Draw from a shuffled deck so every eligible joke appears once per cycle."""
+        if count <= 0:
+            return []
+
+        with closing(self.connect()) as conn:
+            rows = conn.execute(
+                "SELECT joke_id, source_id, title, body, score, permalink FROM jokes"
+            ).fetchall()
+        if not rows:
+            raise RuntimeError("No jokes found in database. Run migrate first.")
+
+        filter_config = filter_config or FilterConfig()
+        filtered_rows = [
+            row for row in rows
+            if is_clean_enough(
+                title=row["title"],
+                body=row["body"],
+                score=int(row["score"]),
+                config=filter_config,
+            )
+        ]
+        candidate_rows = filtered_rows if filtered_rows else rows
+        row_by_id = {int(row["joke_id"]): row for row in candidate_rows}
+        signature_source = "\n".join(sorted(row["source_id"] for row in candidate_rows))
+        pool_signature = hashlib.sha256(signature_source.encode("utf-8")).hexdigest()
+
+        state = self._load_state()
+        stored_deck = state.get("shuffled_deck_ids", [])
+        deck = [
+            int(joke_id)
+            for joke_id in stored_deck
+            if int(joke_id) in row_by_id
+        ] if state.get("deck_pool_signature") == pool_signature else []
+
+        if not deck:
+            deck = list(row_by_id)
+            random.Random(seed).shuffle(deck)
+            last_sent_ids = state.get("recent_joke_ids", [])
+            if len(deck) > 1 and last_sent_ids and deck[0] == last_sent_ids[-1]:
+                deck[0], deck[1] = deck[1], deck[0]
+
+            state["shuffled_deck_ids"] = deck
+            state["deck_pool_signature"] = pool_signature
+            state["deck_cycle"] = int(state.get("deck_cycle", 0)) + 1
+            if persist_deck:
+                self._write_state(state)
+
+        selected_ids = deck[:count]
+        return [self._row_to_joke(row_by_id[joke_id]) for joke_id in selected_ids]
+
     def remember_jokes(self, jokes: Sequence[Joke], recent_limit: int | None = None) -> None:
         """Record jokes after a delivery succeeds."""
         if not jokes:
@@ -159,8 +217,14 @@ class JokeStore:
         if recent_limit is None:
             recent_limit = min(max(len(jokes) * 10, 30), max(total - len(jokes), 0))
         recent_limit = max(recent_limit, len(jokes))
-        recent_ids = self._load_state().get("recent_joke_ids", [])
-        self._save_state(recent_ids + [joke.joke_id for joke in jokes], recent_limit=recent_limit)
+        state = self._load_state()
+        sent_ids = [joke.joke_id for joke in jokes]
+        recent_ids = state.get("recent_joke_ids", [])
+        state["recent_joke_ids"] = (recent_ids + sent_ids)[-recent_limit:]
+        state["shuffled_deck_ids"] = [
+            joke_id for joke_id in state.get("shuffled_deck_ids", []) if joke_id not in sent_ids
+        ]
+        self._write_state(state)
 
     def _row_to_joke(self, row: sqlite3.Row) -> Joke:
         return Joke(
@@ -179,7 +243,11 @@ class JokeStore:
             return json.load(handle)
 
     def _save_state(self, recent_joke_ids: Sequence[int], recent_limit: int) -> None:
-        payload = {"recent_joke_ids": list(recent_joke_ids)[-recent_limit:]}
+        payload = self._load_state()
+        payload["recent_joke_ids"] = list(recent_joke_ids)[-recent_limit:]
+        self._write_state(payload)
+
+    def _write_state(self, payload: dict) -> None:
         with self.state_path.open("w", encoding="utf-8") as handle:
             json.dump(payload, handle, ensure_ascii=False, indent=2)
 

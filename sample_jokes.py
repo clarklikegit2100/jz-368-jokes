@@ -18,7 +18,7 @@ def main() -> None:
     args = parser.parse_args()
 
     store = JokeStore(db_path=args.db)
-    if not args.db.exists():
+    if store.needs_migration(args.csv):
         imported = store.migrate_from_csv(csv_path=args.csv)
         print(f"Database missing. Imported {imported} jokes into {args.db}.\n")
 

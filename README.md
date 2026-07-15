@@ -61,6 +61,7 @@ python3 -m unittest test_joke_store.py
 
 - Jokes are stored in SQLite for faster repeated access than reparsing the CSV every time.
 - Telegram delivery shuffles every eligible joke ID into a deck at the start of each cycle.
+- The deck interleaves categories, so two consecutive deliveries do not use the same joke type.
 - Each successful delivery removes only the top joke, so all 500 appear once before reshuffling.
 - Failed deliveries and dry runs do not consume a joke from the deck.
 - A new cycle is reshuffled and cannot start with the previous cycle's final joke.
@@ -151,7 +152,21 @@ cache is deleted or expires, the workflow starts a fresh shuffled cycle.
 ## Chinese joke pool
 
 - `daily-jokes-zh-500.csv` contains exactly 500 family-friendly Chinese jokes.
-- The pool combines 50 standalone cold jokes with 450 light scenario jokes.
+- The pool has 10 categories with 50 jokes each: cold puns, brain teasers,
+  programmers, workplace, campus, daily life, animals, food, dialogue, and
+  mini-stories.
+- Titles and bodies are unique, and the old repeated scenario template has been removed.
 - The Telegram workflow uses this Chinese pool by default.
 - English jokes remain available in `daily-jokes-1000.csv`.
 - Chinese and English databases use separate SQLite files.
+- When the CSV changes or its schema is upgraded, the sender automatically rebuilds
+  its local SQLite copy. No manual database deletion is needed.
+
+To regenerate the Chinese pool, install and authenticate the Claude CLI, then run:
+
+```bash
+python generate_chinese_jokes_ai.py
+```
+
+Generation is checkpointed under `data/` and validates the category counts and
+global title/body uniqueness before replacing the CSV.

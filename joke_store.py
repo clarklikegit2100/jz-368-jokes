@@ -22,6 +22,7 @@ DEFAULT_STATE_PATH = Path(__file__).resolve().parent / "data" / "selection_state
 class Joke:
     joke_id: int
     source_id: str
+    category: str
     title: str
     body: str
     score: int
@@ -52,11 +53,13 @@ class JokeStore:
     def migrate_from_csv(self, csv_path: Path | str = DEFAULT_CSV_PATH) -> int:
         csv_path = Path(csv_path)
         with closing(self.connect()) as conn:
+            conn.execute("DROP TABLE IF EXISTS jokes")
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS jokes (
+                CREATE TABLE jokes (
                     joke_id INTEGER PRIMARY KEY,
                     source_id TEXT NOT NULL,
+                    category TEXT NOT NULL,
                     title TEXT NOT NULL,
                     body TEXT NOT NULL,
                     score INTEGER NOT NULL,
@@ -64,13 +67,13 @@ class JokeStore:
                 )
                 """
             )
-            conn.execute("DELETE FROM jokes")
             with csv_path.open("r", encoding="utf-8", newline="") as handle:
                 reader = csv.DictReader(handle)
                 rows = [
                     (
                         int(row["joke_id"]),
                         row["source_id"],
+                        (row.get("category") or "general").strip(),
                         row["title"],
                         row["body"],
                         int(row["score"]),
@@ -79,13 +82,27 @@ class JokeStore:
                     for row in reader
                 ]
             conn.executemany(
-                "INSERT INTO jokes (joke_id, source_id, title, body, score, permalink) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO jokes (joke_id, source_id, category, title, body, score, permalink) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 rows,
             )
             conn.execute("CREATE INDEX IF NOT EXISTS idx_jokes_score ON jokes(score DESC)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_jokes_source_id ON jokes(source_id)")
             conn.commit()
         return len(rows)
+
+    def needs_migration(self, csv_path: Path | str = DEFAULT_CSV_PATH) -> bool:
+        """Return whether the SQLite copy is missing, stale, or uses an old schema."""
+        csv_path = Path(csv_path)
+        if not self.db_path.exists():
+            return True
+        try:
+            with closing(self.connect()) as conn:
+                columns = {
+                    row["name"] for row in conn.execute("PRAGMA table_info(jokes)").fetchall()
+                }
+        except sqlite3.DatabaseError:
+            return True
+        return "category" not in columns or csv_path.stat().st_mtime > self.db_path.stat().st_mtime
 
     def count(self) -> int:
         with closing(self.connect()) as conn:
@@ -119,18 +136,18 @@ class JokeStore:
             placeholders = ",".join("?" for _ in recent_ids)
             if recent_ids:
                 rows = conn.execute(
-                    f"SELECT joke_id, source_id, title, body, score, permalink FROM jokes WHERE joke_id NOT IN ({placeholders})"
+                    f"SELECT joke_id, source_id, category, title, body, score, permalink FROM jokes WHERE joke_id NOT IN ({placeholders})"
                     ,
                     recent_ids,
                 ).fetchall()
             else:
                 rows = conn.execute(
-                    "SELECT joke_id, source_id, title, body, score, permalink FROM jokes"
+                    "SELECT joke_id, source_id, category, title, body, score, permalink FROM jokes"
                 ).fetchall()
 
             if len(rows) < count:
                 rows = conn.execute(
-                    "SELECT joke_id, source_id, title, body, score, permalink FROM jokes"
+                    "SELECT joke_id, source_id, category, title, body, score, permalink FROM jokes"
                 ).fetchall()
                 recent_ids = []
 
@@ -164,7 +181,7 @@ class JokeStore:
 
         with closing(self.connect()) as conn:
             rows = conn.execute(
-                "SELECT joke_id, source_id, title, body, score, permalink FROM jokes"
+                "SELECT joke_id, source_id, category, title, body, score, permalink FROM jokes"
             ).fetchall()
         if not rows:
             raise RuntimeError("No jokes found in database. Run migrate first.")
@@ -181,7 +198,10 @@ class JokeStore:
         ]
         candidate_rows = filtered_rows if filtered_rows else rows
         row_by_id = {int(row["joke_id"]): row for row in candidate_rows}
-        signature_source = "\n".join(sorted(row["source_id"] for row in candidate_rows))
+        signature_source = "\n".join(sorted(
+            f"{row['source_id']}\0{row['category']}\0{row['title']}\0{row['body']}"
+            for row in candidate_rows
+        ))
         pool_signature = hashlib.sha256(signature_source.encode("utf-8")).hexdigest()
 
         state = self._load_state()
@@ -193,11 +213,33 @@ class JokeStore:
         ] if state.get("deck_pool_signature") == pool_signature else []
 
         if not deck:
-            deck = list(row_by_id)
-            random.Random(seed).shuffle(deck)
+            rng = random.Random(seed)
+            groups: dict[str, list[int]] = {}
+            for joke_id, row in row_by_id.items():
+                groups.setdefault(row["category"], []).append(joke_id)
+            for joke_ids in groups.values():
+                rng.shuffle(joke_ids)
+
             last_sent_ids = state.get("recent_joke_ids", [])
-            if len(deck) > 1 and last_sent_ids and deck[0] == last_sent_ids[-1]:
-                deck[0], deck[1] = deck[1], deck[0]
+            previous_category = None
+            if last_sent_ids and last_sent_ids[-1] in row_by_id:
+                previous_category = row_by_id[last_sent_ids[-1]]["category"]
+
+            deck = []
+            while groups:
+                available = [
+                    category for category, joke_ids in groups.items()
+                    if joke_ids and category != previous_category
+                ]
+                if not available:
+                    available = [category for category, joke_ids in groups.items() if joke_ids]
+                largest_group = max(len(groups[category]) for category in available)
+                choices = [category for category in available if len(groups[category]) == largest_group]
+                category = rng.choice(choices)
+                deck.append(groups[category].pop())
+                previous_category = category
+                if not groups[category]:
+                    del groups[category]
 
             state["shuffled_deck_ids"] = deck
             state["deck_pool_signature"] = pool_signature
@@ -230,6 +272,7 @@ class JokeStore:
         return Joke(
             joke_id=int(row["joke_id"]),
             source_id=row["source_id"],
+            category=row["category"],
             title=row["title"],
             body=row["body"],
             score=int(row["score"]),
@@ -254,6 +297,6 @@ class JokeStore:
 
 def ensure_database(csv_path: Path | str = DEFAULT_CSV_PATH, db_path: Path | str = DEFAULT_DB_PATH) -> JokeStore:
     store = JokeStore(db_path=db_path)
-    if not Path(db_path).exists():
+    if store.needs_migration(csv_path):
         store.migrate_from_csv(csv_path)
     return store

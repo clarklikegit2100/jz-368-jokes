@@ -59,7 +59,7 @@ def main() -> None:
     args = parser.parse_args()
 
     store = JokeStore(db_path=args.db)
-    if not args.db.exists():
+    if store.needs_migration(args.csv):
         store.migrate_from_csv(csv_path=args.csv)
 
     jokes = store.get_random_unique_jokes(

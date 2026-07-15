@@ -140,8 +140,11 @@ python send_telegram_joke.py --phase afternoon
 python send_telegram_joke.py --phase evening
 ```
 
-The workflow in `.github/workflows/telegram-daily-jokes.yml` sends at 08:00,
-12:30, and 20:00 in the `America/New_York` timezone. Change all three
+The workflow in `.github/workflows/telegram-daily-jokes.yml` sends Chinese at
+08:00, English at 12:30, and Chinese at 20:00, giving a daily Chinese-to-English
+ratio of 2:1 in the `America/New_York` timezone. Chinese and English use separate
+shuffled-deck state files, so each language completes its own non-repeating cycle.
+Change all three
 `timezone` values if another IANA timezone is required, such as
 `Asia/Shanghai`. The workflow can also be run manually from the Actions tab.
 

@@ -40,7 +40,9 @@ jobs:
       - name: Restore recent-joke history
         uses: actions/cache/restore@v4
         with:
-          path: data/selection_state.json
+          path: |
+            data/selection_state-zh.json
+            data/selection_state-en.json
           key: joke-history-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             joke-history-
@@ -62,16 +64,34 @@ jobs:
             esac
           fi
           echo "JOKE_PHASE=$phase" >> "$GITHUB_ENV"
+          case "$phase" in
+            morning|evening)
+              echo "JOKE_LANGUAGE=zh" >> "$GITHUB_ENV"
+              echo "JOKE_CSV=daily-jokes-zh-500.csv" >> "$GITHUB_ENV"
+              echo "JOKE_DB=data/jokes-zh.db" >> "$GITHUB_ENV"
+              echo "JOKE_STATE=data/selection_state-zh.json" >> "$GITHUB_ENV"
+              ;;
+            afternoon)
+              echo "JOKE_LANGUAGE=en" >> "$GITHUB_ENV"
+              echo "JOKE_CSV=daily-jokes-1000.csv" >> "$GITHUB_ENV"
+              echo "JOKE_DB=data/jokes.db" >> "$GITHUB_ENV"
+              echo "JOKE_STATE=data/selection_state-en.json" >> "$GITHUB_ENV"
+              ;;
+          esac
 
       - name: Send joke
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python send_telegram_joke.py --phase "$JOKE_PHASE" --csv daily-jokes-zh-500.csv --db data/jokes-zh.db
+        run: |
+          echo "Sending $JOKE_LANGUAGE joke for $JOKE_PHASE"
+          python send_telegram_joke.py --phase "$JOKE_PHASE" --csv "$JOKE_CSV" --db "$JOKE_DB" --state "$JOKE_STATE"
 
       - name: Save recent-joke history
         if: success()
         uses: actions/cache/save@v4
         with:
-          path: data/selection_state.json
+          path: |
+            data/selection_state-zh.json
+            data/selection_state-en.json
           key: joke-history-${{ github.run_id }}-${{ github.run_attempt }}

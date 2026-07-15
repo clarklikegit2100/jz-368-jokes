@@ -10,7 +10,7 @@ from send_daily_jokes import build_message
 class JokeStoreTests(unittest.TestCase):
     def test_migrate_and_sample_unique_jokes(self) -> None:
         repo_dir = Path(__file__).resolve().parent
-        csv_path = repo_dir / "daily-jokes-1000.csv"
+        csv_path = repo_dir / "daily-jokes-en-500.csv"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -32,7 +32,7 @@ class JokeStoreTests(unittest.TestCase):
 
     def test_build_message_formats_output(self) -> None:
         repo_dir = Path(__file__).resolve().parent
-        csv_path = repo_dir / "daily-jokes-1000.csv"
+        csv_path = repo_dir / "daily-jokes-en-500.csv"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)

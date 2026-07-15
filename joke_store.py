@@ -13,7 +13,7 @@ from typing import Sequence
 from joke_filters import FilterConfig, is_clean_enough
 
 
-DEFAULT_CSV_PATH = Path(__file__).resolve().parent / "daily-jokes-1000.csv"
+DEFAULT_CSV_PATH = Path(__file__).resolve().parent / "daily-jokes-en-500.csv"
 DEFAULT_DB_PATH = Path(__file__).resolve().parent / "data" / "jokes.db"
 DEFAULT_STATE_PATH = Path(__file__).resolve().parent / "data" / "selection_state.json"
 

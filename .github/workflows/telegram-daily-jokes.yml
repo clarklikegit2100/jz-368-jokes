@@ -73,7 +73,7 @@ jobs:
               ;;
             afternoon)
               echo "JOKE_LANGUAGE=en" >> "$GITHUB_ENV"
-              echo "JOKE_CSV=daily-jokes-1000.csv" >> "$GITHUB_ENV"
+              echo "JOKE_CSV=daily-jokes-en-500.csv" >> "$GITHUB_ENV"
               echo "JOKE_DB=data/jokes.db" >> "$GITHUB_ENV"
               echo "JOKE_STATE=data/selection_state-en.json" >> "$GITHUB_ENV"
               ;;

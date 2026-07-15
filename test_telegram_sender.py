@@ -63,7 +63,7 @@ class TelegramTests(unittest.TestCase):
             temp_path = Path(temp_dir)
             state_path = temp_path / "selection_state.json"
             store = JokeStore(db_path=temp_path / "jokes.db", state_path=state_path)
-            store.migrate_from_csv(repo_dir / "daily-jokes-1000.csv")
+            store.migrate_from_csv(repo_dir / "daily-jokes-en-500.csv")
 
             jokes = store.get_random_unique_jokes(
                 count=1,

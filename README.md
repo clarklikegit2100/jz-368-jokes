@@ -4,7 +4,7 @@ Daily joke reference data and lightweight local tooling for automation that send
 
 ## Files
 
-- `daily-jokes-zh-500.csv` and `daily-jokes-en-550.csv` contain the active Chinese and English pools.
+- `daily-jokes-zh-500.csv` and `daily-jokes-en-720.csv` contain the active Chinese and English pools.
 - `one-million-reddit-jokes.csv` is the original large source dataset and is intentionally not committed because it is too large for normal GitHub uploads.
 - `joke_store.py` provides a SQLite-backed joke store and recent-repeat protection.
 - `migrate_jokes.py` imports the CSV into a local SQLite database.
@@ -16,7 +16,7 @@ Daily joke reference data and lightweight local tooling for automation that send
 
 ## Current Joke Pool
 
-- 500 family-friendly Chinese jokes and 550 English jokes
+- 500 family-friendly Chinese jokes and 720 English jokes
 - CSV columns: `joke_id`, `source_id`, `category`, `title`, `body`, `score`, `permalink`
 
 ## Quick Start
@@ -161,7 +161,7 @@ cache is deleted or expires, the workflow starts a fresh shuffled cycle.
   mini-stories.
 - Titles and bodies are unique, and the old repeated scenario template has been removed.
 - The Telegram workflow uses this pool for morning and evening delivery.
-- English jokes are stored separately in `daily-jokes-en-550.csv`.
+- English jokes are stored separately in `daily-jokes-en-720.csv`.
 - Chinese and English databases use separate SQLite files.
 - When the CSV changes or its schema is upgraded, the sender automatically rebuilds
   its local SQLite copy. No manual database deletion is needed.
@@ -177,19 +177,22 @@ global title/body uniqueness before replacing the CSV.
 
 ## English joke pool
 
-- `daily-jokes-en-550.csv` contains 500 generated family-friendly jokes plus 50
-  carefully curated legacy jokes.
+- `daily-jokes-en-720.csv` contains 500 generated family-friendly jokes, 50
+  carefully curated legacy jokes, and 170 generated mild-adult jokes.
 - The generated pool has 10 categories with 50 jokes each: wordplay, brain teasers,
   technology, workplace, school, everyday life, animals, food, dialogue, and
   mini-stories.
 - Titles and bodies are globally unique, and every brain teaser includes its answer.
-- The curated addition contains 40 clean jokes and 10 `adult_mild` jokes. Mild adult
-  content may use suggestive relationship or dating humor, but profanity,
+- Adult categories contain 180 jokes in total (25% of the English pool): 10 curated
+  `adult_mild` jokes plus 170 jokes spanning dating, relationships, wordplay,
+  after-dark humor, and adult dialogue. Mild adult content may use suggestive
+  relationship, bedroom, or dating humor, but profanity,
   discrimination, explicit sexual descriptions, minors, and high-risk material are excluded.
 - The Telegram workflow uses this pool for afternoon delivery.
 
 To regenerate the English pool with checkpointing and validation, run:
 
 ```bash
+python generate_adult_english_jokes_ai.py
 python generate_english_jokes_ai.py
 ```

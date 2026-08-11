@@ -12,8 +12,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
-OUTPUT_PATH = Path(__file__).resolve().parent / "daily-jokes-en-550.csv"
+OUTPUT_PATH = Path(__file__).resolve().parent / "daily-jokes-en-720.csv"
 CURATED_PATH = Path(__file__).resolve().parent / "daily-jokes-en-legacy-curated-50.csv"
+ADULT_GENERATED_PATH = Path(__file__).resolve().parent / "daily-jokes-en-adult-generated-170.csv"
 CHECKPOINT_PATH = Path(__file__).resolve().parent / "data" / "generated_english_jokes.json"
 
 CATEGORIES = [
@@ -216,6 +217,13 @@ def write_csv(jokes: list[dict[str, str]]) -> int:
         if sum(joke["category"] == "adult_mild" for joke in curated) != 10:
             raise RuntimeError("curated legacy pool must contain exactly 10 adult_mild jokes")
 
+    with ADULT_GENERATED_PATH.open("r", encoding="utf-8", newline="") as handle:
+        adult_generated = list(csv.DictReader(handle))
+    if len(adult_generated) != 170:
+        raise RuntimeError(f"expected 170 generated adult jokes, found {len(adult_generated)}")
+    if not all(joke["category"].startswith("adult_") for joke in adult_generated):
+        raise RuntimeError("generated adult pool contains a non-adult category")
+
     records = [
         {
             "source_id": f"en-{joke['category']}-{index:04d}",
@@ -226,7 +234,7 @@ def write_csv(jokes: list[dict[str, str]]) -> int:
             "permalink": "",
         }
         for index, joke in enumerate(jokes, start=1)
-    ] + curated
+    ] + curated + adult_generated
     if len({duplicate_key(joke["title"]) for joke in records}) != len(records):
         raise RuntimeError("combined titles are not globally unique")
     if len({duplicate_key(joke["body"]) for joke in records}) != len(records):

@@ -10,7 +10,7 @@ from send_daily_jokes import build_message
 class JokeStoreTests(unittest.TestCase):
     def test_migrate_and_sample_unique_jokes(self) -> None:
         repo_dir = Path(__file__).resolve().parent
-        csv_path = repo_dir / "daily-jokes-en-500.csv"
+        csv_path = repo_dir / "daily-jokes-en-550.csv"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -32,7 +32,7 @@ class JokeStoreTests(unittest.TestCase):
 
     def test_build_message_formats_output(self) -> None:
         repo_dir = Path(__file__).resolve().parent
-        csv_path = repo_dir / "daily-jokes-en-500.csv"
+        csv_path = repo_dir / "daily-jokes-en-550.csv"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -52,6 +52,10 @@ class JokeStoreTests(unittest.TestCase):
         config = FilterConfig(max_chars=20, min_score=100)
         self.assertFalse(is_clean_enough(title="ok", body="this is way too long for the tiny limit", score=200, config=config))
         self.assertFalse(is_clean_enough(title="ok", body="contains rape term", score=200, config=FilterConfig()))
+        self.assertFalse(is_clean_enough(title="ok", body="contains fucking profanity", score=200, config=FilterConfig()))
+        self.assertFalse(is_clean_enough(title="ok", body="contains racist content", score=200, config=FilterConfig()))
+        self.assertFalse(is_clean_enough(title="ok", body="sexual content involving a 14-year-old", score=200, config=FilterConfig()))
+        self.assertTrue(is_clean_enough(title="ok", body="a mild adult joke about sex between adults", score=200, config=FilterConfig()))
         self.assertFalse(is_clean_enough(title="ok", body="short", score=1, config=FilterConfig(min_score=10)))
         self.assertTrue(is_clean_enough(title="short title", body="clean body", score=200, config=FilterConfig(max_chars=1000, min_score=10)))
 

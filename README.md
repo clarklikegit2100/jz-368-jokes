@@ -4,7 +4,7 @@ Daily joke reference data and lightweight local tooling for automation that send
 
 ## Files
 
-- `daily-jokes-zh-500.csv` and `daily-jokes-en-500.csv` contain the active Chinese and English pools.
+- `daily-jokes-zh-500.csv` and `daily-jokes-en-550.csv` contain the active Chinese and English pools.
 - `one-million-reddit-jokes.csv` is the original large source dataset and is intentionally not committed because it is too large for normal GitHub uploads.
 - `joke_store.py` provides a SQLite-backed joke store and recent-repeat protection.
 - `migrate_jokes.py` imports the CSV into a local SQLite database.
@@ -16,7 +16,7 @@ Daily joke reference data and lightweight local tooling for automation that send
 
 ## Current Joke Pool
 
-- 500 family-friendly Chinese jokes and 500 family-friendly English jokes
+- 500 family-friendly Chinese jokes and 550 English jokes
 - CSV columns: `joke_id`, `source_id`, `category`, `title`, `body`, `score`, `permalink`
 
 ## Quick Start
@@ -62,7 +62,8 @@ python3 -m unittest test_joke_store.py
 - Jokes are stored in SQLite for faster repeated access than reparsing the CSV every time.
 - Telegram delivery shuffles every eligible joke ID into a deck at the start of each cycle.
 - The deck interleaves categories, so two consecutive deliveries do not use the same joke type.
-- Each successful delivery removes only the top joke, so all 500 appear once before reshuffling.
+- Each successful delivery removes only the top joke, so every eligible joke in a
+  language pool appears once before that pool is reshuffled.
 - Failed deliveries and dry runs do not consume a joke from the deck.
 - A new cycle is reshuffled and cannot start with the previous cycle's final joke.
 
@@ -160,7 +161,7 @@ cache is deleted or expires, the workflow starts a fresh shuffled cycle.
   mini-stories.
 - Titles and bodies are unique, and the old repeated scenario template has been removed.
 - The Telegram workflow uses this pool for morning and evening delivery.
-- English jokes are stored separately in `daily-jokes-en-500.csv`.
+- English jokes are stored separately in `daily-jokes-en-550.csv`.
 - Chinese and English databases use separate SQLite files.
 - When the CSV changes or its schema is upgraded, the sender automatically rebuilds
   its local SQLite copy. No manual database deletion is needed.
@@ -176,13 +177,15 @@ global title/body uniqueness before replacing the CSV.
 
 ## English joke pool
 
-- `daily-jokes-en-500.csv` contains exactly 500 family-friendly English jokes.
-- The pool has 10 categories with 50 jokes each: wordplay, brain teasers,
+- `daily-jokes-en-550.csv` contains 500 generated family-friendly jokes plus 50
+  carefully curated legacy jokes.
+- The generated pool has 10 categories with 50 jokes each: wordplay, brain teasers,
   technology, workplace, school, everyday life, animals, food, dialogue, and
   mini-stories.
 - Titles and bodies are globally unique, and every brain teaser includes its answer.
-- Expanded quality rules exclude profanity, sexual content, violence, substances,
-  discriminatory material, and recurring spouse/therapy stereotypes.
+- The curated addition contains 40 clean jokes and 10 `adult_mild` jokes. Mild adult
+  content may use suggestive relationship or dating humor, but profanity,
+  discrimination, explicit sexual descriptions, minors, and high-risk material are excluded.
 - The Telegram workflow uses this pool for afternoon delivery.
 
 To regenerate the English pool with checkpointing and validation, run:

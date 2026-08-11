@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from joke_content_policy import contains_hard_banned_content
+
 
 DEFAULT_MAX_CHARS = 800
 DEFAULT_MIN_SCORE = 50
@@ -40,6 +42,8 @@ def is_clean_enough(*, title: str, body: str, score: int, config: FilterConfig) 
         return False
     if score < config.min_score:
         return False
-    if config.exclude_banned_terms and any(term in text for term in BANNED_TERMS):
+    if config.exclude_banned_terms and (
+        any(term in text for term in BANNED_TERMS) or contains_hard_banned_content(text)
+    ):
         return False
     return True

@@ -12,7 +12,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
-OUTPUT_PATH = Path(__file__).resolve().parent / "daily-jokes-en-500.csv"
+OUTPUT_PATH = Path(__file__).resolve().parent / "daily-jokes-en-550.csv"
+CURATED_PATH = Path(__file__).resolve().parent / "daily-jokes-en-legacy-curated-50.csv"
 CHECKPOINT_PATH = Path(__file__).resolve().parent / "data" / "generated_english_jokes.json"
 
 CATEGORIES = [
@@ -198,7 +199,7 @@ def save_checkpoint(jokes: list[dict[str, str]]) -> None:
     CHECKPOINT_PATH.write_text(json.dumps(jokes, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def write_csv(jokes: list[dict[str, str]]) -> None:
+def write_csv(jokes: list[dict[str, str]]) -> int:
     counts = Counter(joke["category"] for joke in jokes)
     if len(jokes) != 500 or len(counts) != 10 or set(counts.values()) != {50}:
         raise RuntimeError(f"invalid category counts: total={len(jokes)}, categories={counts}")
@@ -206,23 +207,49 @@ def write_csv(jokes: list[dict[str, str]]) -> None:
         raise RuntimeError("titles are not globally unique")
     if len({duplicate_key(joke["body"]) for joke in jokes}) != 500:
         raise RuntimeError("bodies are not globally unique")
+    curated = []
+    if CURATED_PATH.exists():
+        with CURATED_PATH.open("r", encoding="utf-8", newline="") as handle:
+            curated = list(csv.DictReader(handle))
+        if len(curated) != 50:
+            raise RuntimeError(f"expected 50 curated legacy jokes, found {len(curated)}")
+        if sum(joke["category"] == "adult_mild" for joke in curated) != 10:
+            raise RuntimeError("curated legacy pool must contain exactly 10 adult_mild jokes")
+
+    records = [
+        {
+            "source_id": f"en-{joke['category']}-{index:04d}",
+            "category": joke["category"],
+            "title": joke["title"],
+            "body": joke["body"],
+            "score": 100,
+            "permalink": "",
+        }
+        for index, joke in enumerate(jokes, start=1)
+    ] + curated
+    if len({duplicate_key(joke["title"]) for joke in records}) != len(records):
+        raise RuntimeError("combined titles are not globally unique")
+    if len({duplicate_key(joke["body"]) for joke in records}) != len(records):
+        raise RuntimeError("combined bodies are not globally unique")
+
     temp_path = OUTPUT_PATH.with_suffix(".csv.tmp")
     with temp_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=[
             "joke_id", "source_id", "category", "title", "body", "score", "permalink",
         ])
         writer.writeheader()
-        for index, joke in enumerate(jokes, start=1):
+        for index, joke in enumerate(records, start=1):
             writer.writerow({
                 "joke_id": index,
-                "source_id": f"en-{joke['category']}-{index:04d}",
+                "source_id": joke["source_id"],
                 "category": joke["category"],
                 "title": joke["title"],
                 "body": joke["body"],
-                "score": 100,
-                "permalink": "",
+                "score": joke["score"],
+                "permalink": joke["permalink"],
             })
     temp_path.replace(OUTPUT_PATH)
+    return len(records)
 
 
 def main() -> None:
@@ -258,8 +285,8 @@ def main() -> None:
                 save_checkpoint(jokes)
                 category_count = sum(item["category"] == category for item in jokes)
                 print(f"{category}: checkpointed {category_count}/50; total={len(jokes)}", flush=True)
-    write_csv(jokes)
-    print(f"Wrote {len(jokes)} jokes to {OUTPUT_PATH}")
+    total = write_csv(jokes)
+    print(f"Wrote {total} jokes to {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":

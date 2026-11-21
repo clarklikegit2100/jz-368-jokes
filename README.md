@@ -153,6 +153,25 @@ The shuffled-deck state is restored and saved through the GitHub Actions cache.
 A joke is removed from the deck only after Telegram confirms delivery. If the
 cache is deleted or expires, the workflow starts a fresh shuffled cycle.
 
+## Windows 11 Task Scheduler
+
+GitHub disables scheduled workflows after 60 days without repository activity
+(the workflow above was disabled this way in October 2026). To send from your own
+PC instead, use the scripts in `windows/`:
+
+1. Install Python 3 (or set `JOKE_PYTHON` in `.env` to a `python.exe` path).
+2. Copy `.env.example` to `.env` in the repo root and fill in
+   `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
+3. Test: double-click `windows\send_joke_now.bat` (sends one joke now).
+4. Install the schedule: double-click `windows\install_tasks.bat`, or run
+   `powershell -ExecutionPolicy Bypass -File windows\install_tasks.ps1 -Morning 08:00 -Afternoon 12:30 -Evening 20:00`.
+   Add `-RunWhenSignedOut` (from an Administrator PowerShell) to also send while signed out.
+
+Tasks appear in Task Scheduler under the `JZ Jokes` folder and use the PC's local
+time. A missed run (PC asleep or off) runs as soon as the PC is back. Logs are in
+`data\logs\`. Remove the tasks with `windows\uninstall_tasks.ps1`.
+Keep only one sender active (PC or GitHub Actions) to avoid duplicate messages.
+
 ## Chinese joke pool
 
 - `daily-jokes-zh-500.csv` contains exactly 500 family-friendly Chinese jokes.

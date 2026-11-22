@@ -1,0 +1,23 @@
+{
+  "_help": "Copy this file to config.json and edit. Empty 'projects' = use every project in ../projects.csv.",
+  "registry_csv": "../projects.csv",
+  "projects": [],
+  "focus": [
+    "BSGMorpho",
+    "GMorpho",
+    "jz-312-Grad",
+    "jz-AI-Workflow"
+  ],
+  "exclude": [],
+  "active_days": 14,
+  "stale_days": 30,
+  "min_detailed": 3,
+  "max_detailed": 10,
+  "github_owner": "clarklikegit2100",
+  "use_github": true,
+  "use_llm": true,
+  "llm_model": "claude-opus-5-5",
+  "report_language": "English",
+  "git_exe": "git",
+  "path_map": {}
+}

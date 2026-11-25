@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.jz368.jokes.evening</string>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Library/Developer/CommandLineTools/usr/bin/python3</string>
+		<string>/Users/clark/Library/Application Support/JZJokes/send_scheduled_joke.py</string>
+		<string>evening</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>/Users/clark/Library/Application Support/JZJokes/data/logs/evening.error.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/clark/Library/Application Support/JZJokes/data/logs/evening.log</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>20</integer>
+		<key>Minute</key>
+		<integer>0</integer>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>/Users/clark/Library/Application Support/JZJokes</string>
+</dict>
+</plist>

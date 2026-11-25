@@ -153,6 +153,27 @@ The shuffled-deck state is restored and saved through the GitHub Actions cache.
 A joke is removed from the deck only after Telegram confirms delivery. If the
 cache is deleted or expires, the workflow starts a fresh shuffled cycle.
 
+## macOS launchd
+
+Install the per-user native schedule (08:00 and 20:00, both Chinese):
+
+```bash
+python3 macos/install_tasks.py
+```
+
+Credentials are read from local `env` or `.env` (the latter takes precedence).
+Jobs use the Mac's local timezone and run independently of Codex while the user
+is logged in. Missed calendar events during sleep run after wake. Logs are in
+`~/Library/Application Support/JZJokes/data/logs/`. The installer copies the
+runtime and credentials into `~/Library/Application Support/JZJokes` so background
+jobs do not need access to Documents. Reinstall after updating source files or
+credentials; existing runtime history is preserved. The installer does not send
+a message immediately.
+
+Preview: `python3 send_scheduled_joke.py morning --dry-run`.
+Remove both jobs with `python3 macos/install_tasks.py --uninstall`.
+Keep other senders disabled to avoid duplicate messages.
+
 ## Windows 11 Task Scheduler
 
 GitHub disables scheduled workflows after 60 days without repository activity

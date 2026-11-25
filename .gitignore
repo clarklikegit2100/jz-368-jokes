@@ -3,3 +3,4 @@ __pycache__/
 one-million-reddit-jokes.csv
 data/
 .env
+env
